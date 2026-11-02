@@ -1,22 +1,16 @@
-import re
 import subprocess
 from pathlib import Path
 
 import httpx
 
 from app.config import get_settings
-
-FILLER = re.compile(r"\b(uh+|um+|like,?\s|you know)\b", re.IGNORECASE)
+from app.text_format import readable_transcript
 
 _model = None
 
 
 def light_cleanup(transcript: str) -> str:
-    text = FILLER.sub("", transcript)
-    text = re.sub(r"\s+", " ", text).strip()
-    if text and text[-1] not in ".?!":
-        text += "."
-    return text
+    return readable_transcript(transcript)
 
 
 def normalize_audio(input_path: Path, output_path: Path) -> None:

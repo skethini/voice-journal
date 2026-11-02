@@ -14,6 +14,7 @@ from app.llm import LLMClient, get_llm_client
 from app.prompts.entry_analysis import ENTRY_ANALYSIS_SCHEMA
 from app.prompts.shared import ENTRY_USER, SHARED_SYSTEM
 from app.redact import redact_text
+from app.text_format import sanitize_display_text
 from app.transcribe import transcribe_uploaded_audio
 
 logger = logging.getLogger("voice_journal.pipeline")
@@ -61,6 +62,9 @@ async def analyze_entry(entry_id: int, llm: LLMClient | None = None) -> None:
             json_schema=ENTRY_ANALYSIS_SCHEMA,
         )
         data = json.loads(response)
+        if data.get("summary"):
+            data["summary"] = sanitize_display_text(data["summary"])
+            response = json.dumps(data)
         conn.execute(
             """
             INSERT INTO entry_analysis (entry_id, summary, json, model, created_at)
@@ -92,11 +96,13 @@ async def process_entry_pipeline(entry_id: int, llm: LLMClient | None = None) ->
 
     try:
         if audio_path and Path(audio_path).is_file():
-            _, cleaned = await transcribe_uploaded_audio(Path(audio_path))
+            raw, cleaned = await transcribe_uploaded_audio(Path(audio_path))
             with get_db() as conn:
                 conn.execute(
-                    "UPDATE entries SET transcript = ?, status = 'transcribed' WHERE id = ?",
-                    (cleaned, entry_id),
+                    """
+                    UPDATE entries SET transcript = ?, transcript_raw = ?, status = 'transcribed' WHERE id = ?
+                    """,
+                    (cleaned, raw, entry_id),
                 )
                 if not settings.keep_audio:
                     Path(audio_path).unlink(missing_ok=True)

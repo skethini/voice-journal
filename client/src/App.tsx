@@ -8,7 +8,6 @@ import { GuidanceScreen } from "./screens/GuidanceScreen";
 import { InsightsScreen } from "./screens/InsightsScreen";
 import { RecordScreen } from "./screens/RecordScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
-import { TodayScreen } from "./screens/TodayScreen";
 
 export default function App() {
   return (
@@ -17,7 +16,7 @@ export default function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<RecordScreen />} />
-            <Route path="today" element={<TodayScreen />} />
+            <Route path="today" element={<Navigate to="/" replace />} />
             <Route path="entries" element={<EntriesScreen />} />
             <Route path="entries/:id" element={<EntryDetailScreen />} />
             <Route path="insights" element={<InsightsScreen />} />

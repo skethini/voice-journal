@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api, type EntryDetail } from "../api/client";
+import { cleanDisplayText } from "../utils/displayText";
 
 export function EntryDetailScreen() {
   const { id } = useParams();
@@ -12,27 +13,39 @@ export function EntryDetailScreen() {
     if (!id) return;
     void api.getEntry(Number(id)).then((e) => {
       setEntry(e);
-      setTranscript(e.transcript || "");
+      const display =
+        (e as EntryDetail & { transcript_display?: string }).transcript_display ||
+        e.transcript ||
+        "";
+      setTranscript(display);
     });
   }, [id]);
 
   if (!entry) return <p className="py-8 text-slate-500">Loading…</p>;
 
   const parsed = entry.analysis?.parsed;
+  const summary = cleanDisplayText(entry.analysis?.summary || parsed?.summary);
 
   return (
     <div className="space-y-6 py-4">
       <p className="text-xs text-slate-500">
         {entry.created_at} · {entry.status}
       </p>
-      {entry.analysis?.summary && (
+      {summary && (
         <section>
           <h2 className="mb-2 text-sm uppercase text-slate-500">Summary</h2>
-          <p className="leading-relaxed">{entry.analysis.summary}</p>
+          <p className="leading-relaxed text-slate-100">{summary}</p>
         </section>
       )}
       {parsed?.themes?.length ? (
-        <p className="text-sm text-slate-400">Themes: {parsed.themes.join(", ")}</p>
+        <section>
+          <h2 className="mb-2 text-sm uppercase text-slate-500">Themes</h2>
+          <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
+            {parsed.themes.map((t) => (
+              <li key={t}>{cleanDisplayText(t)}</li>
+            ))}
+          </ul>
+        </section>
       ) : null}
       {parsed?.proposed_guidance?.length ? (
         <section>
@@ -45,7 +58,7 @@ export function EntryDetailScreen() {
                 className="rounded-full bg-slate-800 px-3 py-2 text-sm"
                 onClick={() => void api.createGuidance(g)}
               >
-                Save: {g}
+                Save: {cleanDisplayText(g)}
               </button>
             ))}
           </div>
@@ -66,11 +79,12 @@ export function EntryDetailScreen() {
             Save edits
           </button>
         </div>
+        <p className="mb-2 text-xs text-slate-500">Cleaned for reading — filler removed, sentences punctuated.</p>
         <textarea
           value={transcript}
           onChange={(e) => setTranscript(e.target.value)}
           rows={12}
-          className="w-full rounded-xl border border-slate-800 bg-slate-900 p-4 text-sm leading-relaxed"
+          className="w-full rounded-xl border border-slate-800 bg-slate-900 p-4 text-sm leading-relaxed text-slate-100"
         />
       </section>
       <button

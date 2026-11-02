@@ -54,6 +54,9 @@ def build_export_zip() -> bytes:
     settings = get_settings()
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        db = settings.db_path
+        if db.is_file():
+            zf.write(db, "journal.db")
         base = settings.entries_export_dir
         if base.is_dir():
             for p in base.rglob("*.md"):

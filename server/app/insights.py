@@ -6,7 +6,9 @@ from datetime import datetime, timedelta, timezone
 from app.db import get_db
 from app.embed import embed_texts
 from app.llm import LLMClient, get_llm_client
+from app.prompts.daily_prompt import DAILY_PROMPT_SCHEMA
 from app.prompts.shared import DAILY_PROMPT_USER, SHARED_SYSTEM, SYNTHESIS_USER, THREAD_MATCH_USER
+from app.text_format import parse_llm_json, sanitize_display_text
 
 
 def _utc_now() -> str:
@@ -38,8 +40,8 @@ async def update_threads_from_analysis(conn, entry_id: int, entry_date: str, dat
             ],
         )
         try:
-            decision = json.loads(resp)
-        except json.JSONDecodeError:
+            decision = parse_llm_json(resp)
+        except (json.JSONDecodeError, ValueError):
             decision = {"action": "new", "label": text}
 
         if decision.get("action") == "match" and decision.get("thread_id"):
@@ -115,13 +117,15 @@ async def ensure_daily_prompt(llm: LLMClient | None = None) -> dict | None:
                     ),
                 }
             ],
+            json_schema=DAILY_PROMPT_SCHEMA,
         )
         try:
-            payload = json.loads(resp)
-            text = payload.get("text") or resp.strip()
-            alternates = json.dumps(payload.get("alternates", []))
-        except json.JSONDecodeError:
-            text = resp.strip()
+            payload = parse_llm_json(resp)
+            text = sanitize_display_text(payload.get("text") or "")
+            alts = [sanitize_display_text(a) for a in payload.get("alternates", []) if a]
+            alternates = json.dumps(alts)
+        except (json.JSONDecodeError, ValueError):
+            text = sanitize_display_text(resp)
             alternates = "[]"
 
         conn.execute(
@@ -160,20 +164,22 @@ async def generate_synthesis(period: str, llm: LLMClient | None = None) -> dict:
         guidance_rows = conn.execute("SELECT text FROM guidance WHERE active = 1").fetchall()
         guidance = "\n".join(r["text"] for r in guidance_rows) or "(none)"
         system = SHARED_SYSTEM.format(guidance=guidance, rejected="(none)")
-        markdown = await llm.complete(
-            system,
-            [
-                {
-                    "role": "user",
-                    "content": SYNTHESIS_USER.format(
-                        period=period,
-                        start=start,
-                        end=end,
-                        summaries=summary_text,
-                        threads=thread_text,
-                    ),
-                }
-            ],
+        markdown = sanitize_display_text(
+            await llm.complete(
+                system,
+                [
+                    {
+                        "role": "user",
+                        "content": SYNTHESIS_USER.format(
+                            period=period,
+                            start=start,
+                            end=end,
+                            summaries=summary_text,
+                            threads=thread_text,
+                        ),
+                    }
+                ],
+            )
         )
         cur = conn.execute(
             """

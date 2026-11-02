@@ -1,7 +1,10 @@
 ENTRY_ANALYSIS_SCHEMA = {
     "type": "object",
     "properties": {
-        "summary": {"type": "string"},
+        "summary": {
+            "type": "string",
+            "description": "2-4 sentences: specific events and the user's actual insight—not vague labels like 'work learning'.",
+        },
         "themes": {"type": "array", "items": {"type": "string"}},
         "goals": {
             "type": "array",

@@ -104,10 +104,18 @@ def init_db(db_path: Path | None = None) -> None:
     try:
         conn.executescript(SCHEMA)
         conn.commit()
+        _migrate(conn)
         _init_vec(conn)
         _sync_fts(conn)
     finally:
         conn.close()
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(entries)").fetchall()}
+    if "transcript_raw" not in cols:
+        conn.execute("ALTER TABLE entries ADD COLUMN transcript_raw TEXT")
+    conn.commit()
 
 
 def _init_vec(conn: sqlite3.Connection) -> None:

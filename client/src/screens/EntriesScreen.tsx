@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { cleanDisplayText } from "../utils/displayText";
 import { Link } from "react-router-dom";
 import { api, type EntryListItem } from "../api/client";
 
@@ -26,7 +27,7 @@ export function EntriesScreen() {
           <li key={e.id}>
             <Link to={`/entries/${e.id}`} className="block rounded-xl bg-slate-900/60 px-4 py-3">
               <span className="text-xs text-slate-500">{e.created_at}</span>
-              <p>{e.summary || e.status}</p>
+              <p className="leading-snug">{cleanDisplayText(e.summary) || e.status}</p>
             </Link>
           </li>
         ))}

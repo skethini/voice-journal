@@ -13,7 +13,12 @@ If the user's words suggest serious distress or risk to themselves, respond with
 </rejected_framings>
 """
 
-ENTRY_USER = """Analyze this journal entry transcript. Return JSON matching the schema.
+ENTRY_USER = """Analyze this journal entry transcript. Return JSON only (no markdown fences).
+
+Writing rules for summary and themes:
+- Name what actually happened (specific situation, decision, conversation, or moment)—not vague buckets like "work learning" or "personal growth" alone.
+- Include the user's real insight, tension, or open loop in their own framing.
+- themes: concrete phrases tied to events (e.g. "debated quitting the project after the standup"), not one-word labels.
 
 Entry date: {date}
 Transcript:
@@ -21,6 +26,9 @@ Transcript:
 """
 
 DAILY_PROMPT_USER = """Write one primary journaling prompt and two alternates for today ({date}).
+Be specific—tie to something concrete from recent entries when possible, not generic self-help.
+Return JSON only with keys text and alternates (array of two strings). No markdown code blocks.
+
 Recent summaries (7 days):
 {summaries}
 
@@ -29,12 +37,11 @@ Open threads:
 
 Recent prompts (avoid repeating):
 {recent_prompts}
-
-Return JSON: {{"text": "...", "alternates": ["...", "..."]}}
 """
 
-SYNTHESIS_USER = """Write a {period} synthesis in markdown with sections:
-What stood out · Recurring themes (dated evidence) · Intentions vs follow-through ·
+SYNTHESIS_USER = """Write a {period} synthesis in plain markdown (no JSON, no ``` fences).
+Use specific events and quotes—not vague theme names alone.
+Sections: What stood out · Recurring themes (dated evidence) · Intentions vs follow-through ·
 Anything relevant to standing guidance (only if real signal) · 2-3 open questions.
 
 Period: {start} to {end}

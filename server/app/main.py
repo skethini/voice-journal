@@ -29,6 +29,7 @@ from app.db import get_db, init_db
 from app.export import build_export_zip, nightly_backup
 from app.insights import ensure_daily_prompt, generate_synthesis
 from app.pipeline import process_entry_pipeline
+from app.text_format import readable_transcript, sanitize_display_text
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("voice_journal")
@@ -153,6 +154,9 @@ async def list_entries(_: AuthDep, query: str = "", limit: int = 30, cursor: Opt
             params.append(limit)
             rows = conn.execute(sql, params).fetchall()
     items = [dict(r) for r in rows]
+    for item in items:
+        if item.get("summary"):
+            item["summary"] = sanitize_display_text(item["summary"])
     next_cursor = items[-1]["id"] if len(items) == limit else None
     return {"items": items, "next_cursor": next_cursor}
 
@@ -168,9 +172,19 @@ async def get_entry(entry_id: int, _: AuthDep) -> dict:
             (entry_id,),
         ).fetchone()
     out = dict(row)
+    raw = out.get("transcript_raw") or ""
+    readable = out.get("transcript") or readable_transcript(raw)
+    out["transcript_display"] = readable_transcript(readable)
     out["analysis"] = dict(analysis) if analysis else None
-    if out["analysis"] and out["analysis"].get("json"):
-        out["analysis"]["parsed"] = json.loads(out["analysis"]["json"])
+    if out["analysis"]:
+        if out["analysis"].get("summary"):
+            out["analysis"]["summary"] = sanitize_display_text(out["analysis"]["summary"])
+        if out["analysis"].get("json"):
+            out["analysis"]["parsed"] = json.loads(out["analysis"]["json"])
+            if out["analysis"]["parsed"].get("summary"):
+                out["analysis"]["parsed"]["summary"] = sanitize_display_text(
+                    out["analysis"]["parsed"]["summary"]
+                )
     return out
 
 
@@ -184,9 +198,10 @@ async def patch_entry(entry_id: int, body: EntryPatch, _: AuthDep, background_ta
         row = conn.execute("SELECT id FROM entries WHERE id = ?", (entry_id,)).fetchone()
         if not row:
             raise HTTPException(404)
+        cleaned = readable_transcript(body.transcript)
         conn.execute(
             "UPDATE entries SET transcript = ?, transcript_edited = 1, status = 'transcribed' WHERE id = ?",
-            (body.transcript, entry_id),
+            (cleaned, entry_id),
         )
     from app.pipeline import analyze_entry
 
@@ -212,7 +227,10 @@ async def prompts_today(_: AuthDep) -> dict:
     if not row:
         raise HTTPException(404)
     row = dict(row)
-    row["alternates_list"] = json.loads(row.get("alternates") or "[]")
+    row["text"] = sanitize_display_text(row.get("text") or "")
+    row["alternates_list"] = [
+        sanitize_display_text(a) for a in json.loads(row.get("alternates") or "[]")
+    ]
     return row
 
 

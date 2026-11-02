@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from app.db import get_db
 from app.embed import search_entries
+from app.text_format import sanitize_display_text
 from app.llm import LLMClient, get_llm_client
 from app.prompts.shared import ASK_USER, SHARED_SYSTEM
 
@@ -53,4 +54,4 @@ async def answer_question(question: str, llm: LLMClient | None = None) -> dict:
                 "There isn't much in your journal that speaks to this directly — "
                 "here's what I could find tentatively:\n\n" + answer
             )
-        return {"answer": answer, "citations": citations}
+        return {"answer": sanitize_display_text(answer), "citations": citations}

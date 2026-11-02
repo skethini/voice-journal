@@ -110,6 +110,7 @@ export type EntryListItem = {
 
 export type EntryDetail = EntryListItem & {
   transcript: string;
+  transcript_display?: string;
   analysis: {
     summary: string;
     parsed: AnalysisJson;

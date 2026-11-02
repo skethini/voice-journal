@@ -20,12 +20,14 @@ export function SettingsScreen() {
       <a
         href={`${apiBase}/export`}
         className="inline-block rounded-xl bg-slate-800 px-4 py-3"
-        download
+        download="journal-export.zip"
       >
-        Download markdown export (zip)
+        Download full backup (zip)
       </a>
       <p className="text-slate-500">
-        Server URL, passcode, and Tailscale setup are configured on the host. See README.
+        Includes <code className="text-slate-400">journal.db</code> (everything) plus markdown
+        files under <code className="text-slate-400">entries/</code>. Save copies to iCloud Drive,
+        Google Drive, or an external drive regularly — especially if you host on Render free tier.
       </p>
     </div>
   );

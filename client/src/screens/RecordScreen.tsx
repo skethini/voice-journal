@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { api } from "../api/client";
+import { Link } from "react-router-dom";
+import { api, type EntryListItem, type PromptToday } from "../api/client";
 import { enqueueUpload, flushQueue } from "../api/offlineQueue";
+import { cleanDisplayText } from "../utils/displayText";
 
 function pickMime(): string | undefined {
   if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
@@ -13,6 +15,8 @@ function pickMime(): string | undefined {
 }
 
 export function RecordScreen() {
+  const [prompt, setPrompt] = useState<PromptToday | null>(null);
+  const [recent, setRecent] = useState<EntryListItem[]>([]);
   const [recording, setRecording] = useState(false);
   const [paused, setPaused] = useState(false);
   const [seconds, setSeconds] = useState(0);
@@ -23,6 +27,15 @@ export function RecordScreen() {
 
   useEffect(() => {
     void flushQueue();
+    void (async () => {
+      try {
+        const [p, e] = await Promise.all([api.todayPrompt(), api.listEntries()]);
+        setPrompt(p);
+        setRecent(e.items.slice(0, 5));
+      } catch {
+        /* prompt optional offline */
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -91,7 +104,9 @@ export function RecordScreen() {
         setStatus("Saved offline — will upload when connected.");
       }
       setStatus("Uploaded. Processing on server.");
-    } catch (e) {
+      const e = await api.listEntries();
+      setRecent(e.items.slice(0, 5));
+    } catch {
       await enqueueUpload(blob, seconds);
       setStatus("Queued for upload.");
     }
@@ -103,42 +118,91 @@ export function RecordScreen() {
 
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");
+  const promptText = prompt ? cleanDisplayText(prompt.text) : null;
 
   return (
-    <div className="flex flex-col items-center gap-8 py-10">
-      <p className="text-4xl tabular-nums text-slate-300">
-        {mm}:{ss}
-      </p>
-      {!recording ? (
-        <button
-          type="button"
-          onClick={() => void start()}
-          className="h-28 w-28 rounded-full bg-rose-600 text-lg font-medium shadow-lg active:scale-95"
-        >
-          Record
-        </button>
-      ) : (
-        <div className="flex flex-wrap justify-center gap-4">
-          <button
-            type="button"
-            onClick={pauseResume}
-            className="min-h-12 rounded-xl bg-slate-800 px-6 py-3"
-          >
-            {paused ? "Resume" : "Pause"}
-          </button>
-          <button type="button" onClick={discard} className="min-h-12 rounded-xl bg-slate-800 px-6 py-3">
-            Discard
-          </button>
-          <button
-            type="button"
-            onClick={() => void save()}
-            className="min-h-12 rounded-xl bg-emerald-700 px-6 py-3 font-medium"
-          >
-            Save
-          </button>
-        </div>
+    <div className="flex flex-col gap-8 py-4">
+      {prompt && promptText && (
+        <section className="rounded-2xl bg-slate-900/80 p-5 leading-relaxed">
+          <p className="mb-2 text-xs uppercase tracking-wide text-slate-500">Today</p>
+          <p className="text-lg text-slate-100">{promptText}</p>
+          {prompt.alternates_list?.length > 0 && (
+            <ul className="mt-3 space-y-1 text-sm text-slate-400">
+              {prompt.alternates_list.map((a) => (
+                <li key={a}>{cleanDisplayText(a)}</li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-3 flex gap-3">
+            <button
+              type="button"
+              className="text-xs text-slate-500 underline"
+              onClick={() => void api.promptFeedback(prompt.id, "skip")}
+            >
+              Skip
+            </button>
+            <button
+              type="button"
+              className="text-xs text-slate-500 underline"
+              onClick={() => void api.promptFeedback(prompt.id, "not_helpful")}
+            >
+              Not helpful
+            </button>
+          </div>
+        </section>
       )}
-      {status && <p className="max-w-sm text-center text-sm text-slate-400">{status}</p>}
+
+      <div className="flex flex-col items-center gap-8">
+        <p className="text-4xl tabular-nums text-slate-300">
+          {mm}:{ss}
+        </p>
+        {!recording ? (
+          <button
+            type="button"
+            onClick={() => void start()}
+            className="h-28 w-28 rounded-full bg-rose-600 text-lg font-medium shadow-lg active:scale-95"
+          >
+            Record
+          </button>
+        ) : (
+          <div className="flex flex-wrap justify-center gap-4">
+            <button
+              type="button"
+              onClick={pauseResume}
+              className="min-h-12 rounded-xl bg-slate-800 px-6 py-3"
+            >
+              {paused ? "Resume" : "Pause"}
+            </button>
+            <button type="button" onClick={discard} className="min-h-12 rounded-xl bg-slate-800 px-6 py-3">
+              Discard
+            </button>
+            <button
+              type="button"
+              onClick={() => void save()}
+              className="min-h-12 rounded-xl bg-emerald-700 px-6 py-3 font-medium"
+            >
+              Save
+            </button>
+          </div>
+        )}
+        {status && <p className="max-w-sm text-center text-sm text-slate-400">{status}</p>}
+      </div>
+
+      {recent.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-sm uppercase tracking-wide text-slate-500">Recent</h2>
+          <ul className="space-y-2">
+            {recent.map((e) => (
+              <li key={e.id}>
+                <Link to={`/entries/${e.id}`} className="block rounded-xl bg-slate-900/60 px-4 py-3">
+                  <span className="text-xs text-slate-500">{e.created_at}</span>
+                  <p className="text-sm leading-snug">{cleanDisplayText(e.summary) || e.status}</p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

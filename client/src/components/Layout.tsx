@@ -1,8 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
 
 const tabs = [
-  { to: "/", label: "Record", end: true },
-  { to: "/today", label: "Today" },
+  { to: "/", label: "Journal", end: true },
   { to: "/entries", label: "Entries" },
   { to: "/insights", label: "Insights" },
   { to: "/ask", label: "Ask" },

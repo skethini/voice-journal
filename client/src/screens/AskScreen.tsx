@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { cleanDisplayText } from "../utils/displayText";
 import { Link } from "react-router-dom";
 import { api, type Citation } from "../api/client";
 
@@ -36,7 +37,7 @@ export function AskScreen() {
       </form>
       {answer && (
         <div className="rounded-2xl bg-slate-900/80 p-5 leading-relaxed">
-          <p className="whitespace-pre-wrap">{answer}</p>
+          <p className="whitespace-pre-wrap text-slate-100">{cleanDisplayText(answer)}</p>
           {citations.length > 0 && (
             <ul className="mt-4 space-y-2 border-t border-slate-800 pt-4 text-sm">
               {citations.map((c) => (
