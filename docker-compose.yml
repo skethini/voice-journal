@@ -1,0 +1,12 @@
+services:
+  journal:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - journal-data:/data
+    ports:
+      - "127.0.0.1:8000:8000"
+
+volumes:
+  journal-data:

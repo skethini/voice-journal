@@ -18,7 +18,7 @@ cd server
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-cp ../.env.example .env   # set LLM_MODEL, LLM_API_KEY, optional PASSCODE_HASH
+cp ../.env.example ../.env   # repo root; also works as server/.env — set LLM_MODEL, LLM_API_KEY, optional PASSCODE_HASH
 export LLM_PROVIDER=mock  # or openai / openrouter
 uvicorn app.main:app --app-dir . --reload --host 127.0.0.1 --port 8000
 ```
@@ -46,7 +46,12 @@ Vite proxies `/api` → `http://127.0.0.1:8000`.
 
 Build for production and serve static files behind the same Tailscale host as the API (or configure `VITE_API_BASE`).
 
-## Production (Tailscale)
+## Always-on without your Mac
+
+- **Simple + free cloud (reasonable privacy, passcode on a public URL):** **[docs/SIMPLE_FREE.md](docs/SIMPLE_FREE.md)** — Render + OpenAI Whisper API, no Tailscale.
+- **Max privacy (audio stays on your server):** **[docs/ALWAYS_ON.md](docs/ALWAYS_ON.md)** — Docker + VPS + Tailscale (~$5/mo or Oracle free).
+
+## Production (Tailscale on Mac — dev / personal)
 
 1. Enable full-disk encryption on the host.
 2. Install Tailscale on the server and your phone.

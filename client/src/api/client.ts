@@ -1,5 +1,7 @@
 const BASE = import.meta.env.VITE_API_BASE ?? "/api";
 
+export const apiBase = BASE;
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,

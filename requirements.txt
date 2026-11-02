@@ -1,3 +1,2 @@
-# Used by Render "Python" runtime if Docker is not selected.
-# Prefer: Runtime = Docker, Dockerfile path = Dockerfile.cloud
--r server/requirements-cloud.txt
+# Render Python runtime fallback (prefer Docker + Dockerfile.cloud).
+-r requirements-cloud.txt

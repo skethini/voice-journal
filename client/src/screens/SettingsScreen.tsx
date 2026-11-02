@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type SettingsResponse } from "../api/client";
+import { api, apiBase, type SettingsResponse } from "../api/client";
 
 export function SettingsScreen() {
   const [settings, setSettings] = useState<SettingsResponse | null>(null);
@@ -18,7 +18,7 @@ export function SettingsScreen() {
         </ul>
       )}
       <a
-        href="/api/export"
+        href={`${apiBase}/export`}
         className="inline-block rounded-xl bg-slate-800 px-4 py-3"
         download
       >

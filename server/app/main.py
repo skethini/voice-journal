@@ -50,6 +50,8 @@ async def startup() -> None:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     settings.audio_dir.mkdir(parents=True, exist_ok=True)
     init_db()
+    if settings.public_url and not effective_passcode_hash():
+        logger.warning("PUBLIC_URL is set but PASSCODE_HASH is empty — set a passcode before sharing the link")
     scheduler = AsyncIOScheduler(timezone=settings.timezone)
     scheduler.add_job(lambda: asyncio.create_task(ensure_daily_prompt()), "cron", hour=6)
     scheduler.add_job(lambda: asyncio.create_task(generate_synthesis("week")), "cron", day_of_week="sun", hour=7)
@@ -373,3 +375,26 @@ async def patch_settings(body: SettingsPatch, _: AuthDep) -> dict:
 @app.get("/health")
 async def health() -> dict:
     return {"ok": True}
+
+
+def _client_dist_dir() -> Path | None:
+    here = Path(__file__).resolve()
+    for base in (here.parents[1], here.parents[2]):
+        dist = base / "client" / "dist"
+        if dist.is_dir():
+            return dist
+    return None
+
+
+def _mount_client_spa() -> None:
+    """Serve built PWA from client/dist (same origin as API for Tailscale HTTPS)."""
+    dist = _client_dist_dir()
+    if not dist:
+        logger.info("client/dist missing — run: cd client && VITE_API_BASE= npm run build")
+        return
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/", StaticFiles(directory=dist, html=True), name="spa")
+
+
+_mount_client_spa()

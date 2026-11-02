@@ -3,6 +3,8 @@ import os
 import sqlite3
 from typing import Any
 
+import httpx
+
 from app.config import get_settings
 
 _model = None
@@ -38,9 +40,27 @@ def chunk_text(text: str, max_chars: int = 500) -> list[str]:
 def embed_texts(texts: list[str]) -> list[list[float]]:
     if os.environ.get("EMBED_MOCK"):
         return [[0.0] * DIM for _ in texts]
+    settings = get_settings()
+    if settings.embed_provider == "openai":
+        return _embed_openai(texts)
     model = _get_model()
     vectors = model.encode(texts, normalize_embeddings=True)
     return [v.tolist() for v in vectors]
+
+
+def _embed_openai(texts: list[str]) -> list[list[float]]:
+    settings = get_settings()
+    if not settings.llm_api_key:
+        raise RuntimeError("LLM_API_KEY required for OpenAI embeddings")
+    resp = httpx.post(
+        "https://api.openai.com/v1/embeddings",
+        headers={"Authorization": f"Bearer {settings.llm_api_key}"},
+        json={"model": "text-embedding-3-small", "input": texts, "dimensions": DIM},
+        timeout=60.0,
+    )
+    resp.raise_for_status()
+    data = sorted(resp.json()["data"], key=lambda x: x["index"])
+    return [row["embedding"] for row in data]
 
 
 def store_entry_embeddings(conn: sqlite3.Connection, entry_id: int, transcript: str) -> None:

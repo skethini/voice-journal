@@ -14,7 +14,7 @@ from app.llm import LLMClient, get_llm_client
 from app.prompts.entry_analysis import ENTRY_ANALYSIS_SCHEMA
 from app.prompts.shared import ENTRY_USER, SHARED_SYSTEM
 from app.redact import redact_text
-from app.transcribe import normalize_audio, transcribe_file
+from app.transcribe import transcribe_uploaded_audio
 
 logger = logging.getLogger("voice_journal.pipeline")
 
@@ -92,10 +92,7 @@ async def process_entry_pipeline(entry_id: int, llm: LLMClient | None = None) ->
 
     try:
         if audio_path and Path(audio_path).is_file():
-            wav_path = settings.data_dir / "tmp" / f"{entry_id}.wav"
-            normalize_audio(Path(audio_path), wav_path)
-            _, cleaned = transcribe_file(wav_path)
-            wav_path.unlink(missing_ok=True)
+            _, cleaned = await transcribe_uploaded_audio(Path(audio_path))
             with get_db() as conn:
                 conn.execute(
                     "UPDATE entries SET transcript = ?, status = 'transcribed' WHERE id = ?",

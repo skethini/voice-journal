@@ -68,7 +68,7 @@ def create_session(response: Response) -> None:
         httponly=True,
         samesite="lax",
         max_age=SESSION_MAX_AGE,
-        secure=True,
+        secure=get_settings().cookie_secure,
     )
 
 

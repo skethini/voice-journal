@@ -3,14 +3,26 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Repo root .env (when uvicorn cwd is server/) and server/.env
+_ENV_FILES = (
+    Path(__file__).resolve().parent.parent / ".env",
+    Path(__file__).resolve().parent.parent.parent / ".env",
+)
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=[str(p) for p in _ENV_FILES if p.is_file()] or ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     llm_provider: str = "openai"
     llm_model: str = ""
     llm_api_key: str = ""
-    whisper_model: str = "small"
+    whisper_provider: str = "local"  # local | openai
+    whisper_model: str = "small"  # local: faster-whisper size; openai: whisper-1
+    embed_provider: str = "local"  # local | openai
     data_dir: Path = Path("./data")
     keep_audio: bool = False
     passcode_hash: str = ""
@@ -20,6 +32,8 @@ class Settings(BaseSettings):
     session_secret: str = "dev-insecure-change-me"
     host: str = "127.0.0.1"
     port: int = 8000
+    cookie_secure: bool = True
+    public_url: str = ""  # if set, warn when passcode missing
 
     @property
     def entries_export_dir(self) -> Path:
