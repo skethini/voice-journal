@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from functools import lru_cache
 from pathlib import Path
 
@@ -27,7 +29,9 @@ class Settings(BaseSettings):
     keep_audio: bool = False
     passcode_hash: str = ""
     timezone: str = "America/Los_Angeles"
-    backup_dir: Path = Path("./backups")
+    backup_dir: Path | None = None
+    auto_backup: bool = True
+    backup_retain_days: int = 14
     age_recipient: str = ""
     session_secret: str = "dev-insecure-change-me"
     host: str = "127.0.0.1"
@@ -46,6 +50,12 @@ class Settings(BaseSettings):
     @property
     def db_path(self) -> Path:
         return self.data_dir / "journal.db"
+
+    @property
+    def effective_backup_dir(self) -> Path:
+        if self.backup_dir is not None:
+            return self.backup_dir
+        return self.data_dir / "backups"
 
 
 @lru_cache

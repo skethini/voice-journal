@@ -15,6 +15,7 @@ from app.prompts.entry_analysis import ENTRY_ANALYSIS_SCHEMA
 from app.prompts.shared import ENTRY_USER, SHARED_SYSTEM
 from app.redact import redact_text
 from app.text_format import sanitize_display_text
+from app.ocr import extract_text_from_image
 from app.transcribe import transcribe_uploaded_audio
 
 logger = logging.getLogger("voice_journal.pipeline")
@@ -82,6 +83,34 @@ async def analyze_entry(entry_id: int, llm: LLMClient | None = None) -> None:
         await update_threads_from_analysis(conn, entry_id, row["created_at"], data, llm)
 
     export_entry_markdown(entry_id)
+    try:
+        write_automatic_backup(create_dated=False)
+    except Exception:
+        logger.exception("automatic backup failed entry_id=%s", entry_id)
+
+
+async def process_scanned_entry(
+    entry_id: int,
+    image_data: bytes,
+    content_type: str,
+    llm: LLMClient | None = None,
+) -> None:
+    """OCR journal photo → analyze → export (same path as voice transcripts)."""
+    llm = llm or get_llm_client()
+    try:
+        raw, cleaned = await extract_text_from_image(image_data, content_type)
+        with get_db() as conn:
+            conn.execute(
+                """
+                UPDATE entries SET transcript = ?, transcript_raw = ?, status = 'transcribed' WHERE id = ?
+                """,
+                (cleaned, raw, entry_id),
+            )
+        await analyze_entry(entry_id, llm=llm)
+    except Exception:
+        logger.exception("entry_id=%s scan status=error", entry_id)
+        set_entry_status(entry_id, "error")
+        raise
 
 
 async def process_entry_pipeline(entry_id: int, llm: LLMClient | None = None) -> None:

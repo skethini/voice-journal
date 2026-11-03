@@ -21,26 +21,26 @@ export function EntryDetailScreen() {
     });
   }, [id]);
 
-  if (!entry) return <p className="py-8 text-slate-500">Loading…</p>;
+  if (!entry) return <p className="py-8 text-muted-foreground">Loading…</p>;
 
   const parsed = entry.analysis?.parsed;
   const summary = cleanDisplayText(entry.analysis?.summary || parsed?.summary);
 
   return (
     <div className="space-y-6 py-4">
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">
         {entry.created_at} · {entry.status}
       </p>
       {summary && (
         <section>
-          <h2 className="mb-2 text-sm uppercase text-slate-500">Summary</h2>
-          <p className="leading-relaxed text-slate-100">{summary}</p>
+          <h2 className="mb-2 text-sm uppercase text-muted-foreground">Summary</h2>
+          <p className="leading-relaxed text-foreground">{summary}</p>
         </section>
       )}
       {parsed?.themes?.length ? (
         <section>
-          <h2 className="mb-2 text-sm uppercase text-slate-500">Themes</h2>
-          <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
+          <h2 className="mb-2 text-sm uppercase text-muted-foreground">Themes</h2>
+          <ul className="list-disc space-y-1 pl-5 text-sm text-foreground/80">
             {parsed.themes.map((t) => (
               <li key={t}>{cleanDisplayText(t)}</li>
             ))}
@@ -49,13 +49,13 @@ export function EntryDetailScreen() {
       ) : null}
       {parsed?.proposed_guidance?.length ? (
         <section>
-          <h2 className="mb-2 text-sm uppercase text-slate-500">Suggested standing notes</h2>
+          <h2 className="mb-2 text-sm uppercase text-muted-foreground">Suggested standing notes</h2>
           <div className="flex flex-wrap gap-2">
             {parsed.proposed_guidance.map((g) => (
               <button
                 key={g}
                 type="button"
-                className="rounded-full bg-slate-800 px-3 py-2 text-sm"
+                className="rounded-full bg-secondary px-3 py-2 text-sm"
                 onClick={() => void api.createGuidance(g)}
               >
                 Save: {cleanDisplayText(g)}
@@ -66,11 +66,11 @@ export function EntryDetailScreen() {
       ) : null}
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm uppercase text-slate-500">Transcript</h2>
+          <h2 className="text-sm uppercase text-muted-foreground">Transcript</h2>
           <button
             type="button"
             disabled={saving}
-            className="text-sm text-emerald-400"
+            className="text-sm text-emerald-700"
             onClick={() => {
               setSaving(true);
               void api.patchEntry(entry.id, transcript).finally(() => setSaving(false));
@@ -79,17 +79,17 @@ export function EntryDetailScreen() {
             Save edits
           </button>
         </div>
-        <p className="mb-2 text-xs text-slate-500">Cleaned for reading — filler removed, sentences punctuated.</p>
+        <p className="mb-2 text-xs text-muted-foreground">Cleaned for reading — filler removed, sentences punctuated.</p>
         <textarea
           value={transcript}
           onChange={(e) => setTranscript(e.target.value)}
           rows={12}
-          className="w-full rounded-xl border border-slate-800 bg-slate-900 p-4 text-sm leading-relaxed text-slate-100"
+          className="w-full rounded-xl border border-border bg-background p-4 text-sm leading-relaxed text-foreground"
         />
       </section>
       <button
         type="button"
-        className="text-sm text-slate-500 underline"
+        className="text-sm text-muted-foreground underline"
         onClick={() => void api.feedback("entry_analysis", entry.id, "doesn't feel right")}
       >
         Doesn&apos;t feel right

@@ -20,7 +20,7 @@ export function LoginGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (checking) {
-    return <p className="p-8 text-center text-slate-500">Loading…</p>;
+    return <p className="p-8 text-center text-muted-foreground">Loading…</p>;
   }
 
   if (authed) return <>{children}</>;
@@ -47,7 +47,7 @@ export function LoginGate({ children }: { children: React.ReactNode }) {
           placeholder="Passcode"
           value={passcode}
           onChange={(e) => setPasscode(e.target.value)}
-          className="rounded-xl border border-slate-800 bg-slate-900 px-4 py-3"
+          className="rounded-xl border border-input bg-background px-4 py-3"
         />
         <button type="submit" className="rounded-xl bg-emerald-800 py-3 font-medium">
           Unlock

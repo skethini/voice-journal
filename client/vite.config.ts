@@ -1,9 +1,15 @@
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import path from "node:path";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
   server: {
     proxy: {
       "/api": {
@@ -23,8 +29,8 @@ export default defineConfig({
         name: "Voice Journal",
         short_name: "Journal",
         description: "Private voice journal",
-        theme_color: "#0f1419",
-        background_color: "#0f1419",
+        theme_color: "#fafafa",
+        background_color: "#fafafa",
         display: "standalone",
         orientation: "portrait",
         start_url: "/",
