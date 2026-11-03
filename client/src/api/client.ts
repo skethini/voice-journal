@@ -39,6 +39,12 @@ export const api = {
     return request<{ id: number }>("/entries", { method: "POST", body: fd });
   },
 
+  createScanEntry: (file: File) => {
+    const fd = new FormData();
+    fd.append("image", file, file.name || "journal.jpg");
+    return request<{ id: number }>("/entries/scan", { method: "POST", body: fd });
+  },
+
   listEntries: (query = "") =>
     request<{ items: EntryListItem[]; next_cursor: number | null }>(
       `/entries?limit=30${query ? `&query=${encodeURIComponent(query)}` : ""}`,
@@ -157,4 +163,12 @@ export type SettingsResponse = {
   llm_model: string;
   has_passcode: boolean;
   backup_configured: boolean;
+  entry_count?: number;
+  ephemeral_storage?: boolean;
+  storage_warning?: string | null;
+  auto_backup?: boolean;
+  backup_dir?: string;
+  latest_backup_at?: string | null;
+  dated_backup_count?: number;
+  backup_retain_days?: number;
 };

@@ -19,6 +19,23 @@ async def test_health():
 
 
 @pytest.mark.asyncio
+async def test_scan_entry_mock():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # minimal PNG
+        png = (
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
+            b"\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x01\x01\x01\x00\x18\xdd\x8d\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+        )
+        r = await client.post(
+            "/entries/scan",
+            files={"image": ("page.png", png, "image/png")},
+        )
+        assert r.status_code == 200
+        assert "id" in r.json()
+
+
+@pytest.mark.asyncio
 async def test_guidance_crud():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

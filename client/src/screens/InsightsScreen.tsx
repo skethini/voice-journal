@@ -18,32 +18,32 @@ export function InsightsScreen() {
             key={p}
             type="button"
             onClick={() => setPeriod(p)}
-            className={`rounded-lg px-4 py-2 capitalize ${period === p ? "bg-slate-700" : "bg-slate-900"}`}
+            className={`rounded-lg px-4 py-2 capitalize ${period === p ? "bg-secondary" : "bg-background"}`}
           >
             {p}
           </button>
         ))}
         <button
           type="button"
-          className="ml-auto text-sm text-emerald-400"
+          className="ml-auto text-sm text-emerald-700"
           onClick={() => void api.generateInsight(period).then((s) => setItems((i) => [s, ...i]))}
         >
           Generate
         </button>
       </div>
       {items.map((s) => (
-        <article key={s.id} className="space-y-4 rounded-2xl bg-slate-900/60 p-5 text-sm leading-relaxed">
+        <article key={s.id} className="space-y-4 rounded-2xl bg-card p-5 text-sm leading-relaxed">
           {markdownToBlocks(s.markdown).map((block) => (
             <div key={`${s.id}-${block.heading ?? "p"}`}>
               {block.heading && (
-                <h3 className="mb-1 font-medium text-slate-200">{cleanDisplayText(block.heading)}</h3>
+                <h3 className="mb-1 font-medium text-foreground">{cleanDisplayText(block.heading)}</h3>
               )}
-              <p className="whitespace-pre-wrap text-slate-300">{cleanDisplayText(block.body)}</p>
+              <p className="whitespace-pre-wrap text-foreground/80">{cleanDisplayText(block.body)}</p>
             </div>
           ))}
         </article>
       ))}
-      {!items.length && <p className="text-slate-500">No syntheses yet.</p>}
+      {!items.length && <p className="text-muted-foreground">No syntheses yet.</p>}
     </div>
   );
 }

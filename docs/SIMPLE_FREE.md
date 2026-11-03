@@ -72,7 +72,25 @@ Copy the output → you'll paste as `PASSCODE_HASH`.
 
 ---
 
-## Render build error: `requirements.txt` not found
+## Port scan timeout / “bind to 0.0.0.0”
+
+Render’s load balancer must reach your app on **`0.0.0.0:$PORT`**, not `127.0.0.1`.
+
+| Mistake | Fix |
+|---------|-----|
+| **Dockerfile path** is `Dockerfile` (home/Tailscale image binds **127.0.0.1**) | Set **Dockerfile path** to **`Dockerfile.cloud`** |
+| **Start command** / **Docker command** overrides with `--host 127.0.0.1` | **Clear** start/docker command (use image default) |
+| Python runtime start command from README | Use Docker, or `--host 0.0.0.0 --port $PORT` |
+
+Correct docker command if you must override:
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
+
+(WITH `PYTHONPATH=/app` and working directory `/app` — prefer empty override and `Dockerfile.cloud`.)
+
+---
 
 Usually one of these:
 

@@ -77,3 +77,47 @@ Required files on `main`:
 - `requirements.txt`
 
 See `docs/SIMPLE_FREE.md` for passcode hash and phone usage.
+
+---
+
+## Port scan timeout (“bind to 0.0.0.0?”)
+
+Render’s proxy must hit **`0.0.0.0:$PORT`**. If the app only listens on **`127.0.0.1`**, deploy fails with a port scan timeout.
+
+| Cause | Fix |
+|-------|-----|
+| **Dockerfile path** = `Dockerfile` (home server image — localhost only) | Set **`Dockerfile.cloud`** |
+| **Docker command** / **Start command** uses `127.0.0.1` | **Clear** the override |
+| Python runtime with README dev command | Switch to **Docker** + `Dockerfile.cloud` |
+
+**Settings → Build & Deploy:** Dockerfile path **`Dockerfile.cloud`**, Docker command **empty**.
+
+Push latest `main` (includes `scripts/docker-start-render.sh` in the cloud image), then **Clear build cache & deploy**.
+
+---
+
+## Entries disappeared after redeploy
+
+Render’s **free** web service disk is **ephemeral**: each deploy or restart can wipe `/data`, including `journal.db`.
+
+| Fix | What to do |
+|-----|------------|
+| **Persistent disk (recommended)** | Upgrade to **Starter** (or higher), attach a disk mounted at **`/data`**, set **`PERSISTENT_DISK=true`**. The repo’s `render.yaml` blueprint includes this. |
+| **Backups** | In the app, **Settings → Download full backup (zip)** after important entries. Restore by replacing `journal.db` on a self-hosted copy or keep archives in iCloud/Drive. |
+| **In-app warning** | If `RENDER` is set without `PERSISTENT_DISK`, Settings shows a red alert explaining the risk. |
+
+After attaching a disk, redeploy once and download a backup so you have a copy outside Render too.
+
+### Automatic server-side backups (built in)
+
+With **`AUTO_BACKUP=true`** (default):
+
+| When | What |
+|------|------|
+| After each analyzed entry | Refreshes **`DATA_DIR/backups/journal-latest.zip`** (DB + markdown) |
+| Every night (~3am server time) | Adds a **dated** zip; old dated zips pruned after **`BACKUP_RETAIN_DAYS`** (default 14) |
+| On server start | Refreshes `journal-latest.zip` if the DB exists |
+
+Backups live under **`/data/backups`** when `DATA_DIR=/data` on a **persistent disk** — they survive redeploys like the DB.
+
+On **ephemeral** free tier, automatic backups still help until the next wipe, but you need **Settings → Download full backup** (or sync zips off-server) for true “always” safety. Optional **`AGE_RECIPIENT`** adds encrypted nightly archives (requires `age` on the server).

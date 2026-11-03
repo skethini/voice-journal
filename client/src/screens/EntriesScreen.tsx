@@ -20,13 +20,13 @@ export function EntriesScreen() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search entries"
-        className="w-full rounded-xl border border-slate-800 bg-slate-900 px-4 py-3"
+        className="w-full rounded-xl border border-input bg-background px-4 py-3"
       />
       <ul className="space-y-2">
         {items.map((e) => (
           <li key={e.id}>
-            <Link to={`/entries/${e.id}`} className="block rounded-xl bg-slate-900/60 px-4 py-3">
-              <span className="text-xs text-slate-500">{e.created_at}</span>
+            <Link to={`/entries/${e.id}`} className="block rounded-xl border bg-card px-4 py-3 shadow-sm">
+              <span className="text-xs text-muted-foreground">{e.created_at}</span>
               <p className="leading-snug">{cleanDisplayText(e.summary) || e.status}</p>
             </Link>
           </li>

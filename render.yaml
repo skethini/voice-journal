@@ -1,16 +1,20 @@
-# Deploy on Render (free tier available): https://render.com
-# Connect this GitHub repo → New Web Service → Docker → Dockerfile.cloud
+# Deploy on Render: use a persistent disk so entries survive redeploys.
+# Free tier = ephemeral disk only (data lost on each deploy). Use Starter + disk below.
 #
-# Or paste env vars in the Render dashboard from .env.example.cloud
+# Connect GitHub → New Web Service → Docker → Dockerfile.cloud
 
 services:
   - type: web
     name: voice-journal
     runtime: docker
-    plan: free
+    plan: starter
     rootDir: .
     dockerfilePath: ./Dockerfile.cloud
     healthCheckPath: /health
+    disk:
+      name: voice-journal-data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: WHISPER_PROVIDER
         value: openai
@@ -24,6 +28,8 @@ services:
         value: "true"
       - key: DATA_DIR
         value: /data
+      - key: PERSISTENT_DISK
+        value: "true"
       - key: SESSION_SECRET
         generateValue: true
       - key: LLM_API_KEY

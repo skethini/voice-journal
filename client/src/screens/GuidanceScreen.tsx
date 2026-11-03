@@ -15,7 +15,7 @@ export function GuidanceScreen() {
 
   return (
     <div className="space-y-4 py-4">
-      <p className="text-sm text-slate-400">
+      <p className="text-sm text-muted-foreground">
         Plain notes for your journal — e.g. &quot;help me stay accountable&quot;. They quietly shape future prompts and
         analyses.
       </p>
@@ -35,7 +35,7 @@ export function GuidanceScreen() {
           onChange={(e) => setText(e.target.value)}
           rows={3}
           placeholder="Tell your journal…"
-          className="rounded-xl border border-slate-800 bg-slate-900 p-4"
+          className="rounded-xl border border-border bg-background p-4"
         />
         <button type="submit" className="self-start rounded-xl bg-emerald-800 px-4 py-2">
           Add note
@@ -43,14 +43,14 @@ export function GuidanceScreen() {
       </form>
       <ul className="space-y-2">
         {items.map((g) => (
-          <li key={g.id} className="flex items-start gap-3 rounded-xl bg-slate-900/60 p-4">
+          <li key={g.id} className="flex items-start gap-3 rounded-xl bg-card p-4">
             <input
               type="checkbox"
               checked={!!g.active}
               onChange={() => void api.patchGuidance(g.id, { active: !g.active }).then(reload)}
             />
             <div className="flex-1">
-              <p className={g.active ? "" : "text-slate-500 line-through"}>{g.text}</p>
+              <p className={g.active ? "" : "text-muted-foreground line-through"}>{g.text}</p>
               <button
                 type="button"
                 className="mt-2 text-xs text-rose-400"

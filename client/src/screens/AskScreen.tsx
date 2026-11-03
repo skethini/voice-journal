@@ -29,23 +29,23 @@ export function AskScreen() {
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="Ask your journal…"
-          className="flex-1 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3"
+          className="flex-1 rounded-xl border border-border bg-background px-4 py-3"
         />
-        <button type="submit" disabled={loading} className="rounded-xl bg-slate-700 px-4 py-3">
+        <button type="submit" disabled={loading} className="rounded-xl bg-secondary px-4 py-3">
           Ask
         </button>
       </form>
       {answer && (
-        <div className="rounded-2xl bg-slate-900/80 p-5 leading-relaxed">
-          <p className="whitespace-pre-wrap text-slate-100">{cleanDisplayText(answer)}</p>
+        <div className="rounded-2xl bg-card p-5 leading-relaxed">
+          <p className="whitespace-pre-wrap text-foreground">{cleanDisplayText(answer)}</p>
           {citations.length > 0 && (
-            <ul className="mt-4 space-y-2 border-t border-slate-800 pt-4 text-sm">
+            <ul className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
               {citations.map((c) => (
                 <li key={`${c.entry_id}-${c.quote.slice(0, 20)}`}>
-                  <Link to={`/entries/${c.entry_id}`} className="text-emerald-400">
+                  <Link to={`/entries/${c.entry_id}`} className="text-emerald-700">
                     {c.date}
                   </Link>
-                  <span className="text-slate-500"> — {c.quote}</span>
+                  <span className="text-muted-foreground"> — {c.quote}</span>
                 </li>
               ))}
             </ul>

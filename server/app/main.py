@@ -26,9 +26,10 @@ from app.auth import (
 )
 from app.config import get_settings
 from app.db import get_db, init_db
-from app.export import build_export_zip, nightly_backup
+from app.export import build_export_zip, backup_status, nightly_backup, write_automatic_backup
 from app.insights import ensure_daily_prompt, generate_synthesis
-from app.pipeline import process_entry_pipeline
+from app.pipeline import process_entry_pipeline, process_scanned_entry
+from app.storage import storage_status
 from app.text_format import readable_transcript, sanitize_display_text
 
 logging.basicConfig(level=logging.INFO)
@@ -51,6 +52,20 @@ async def startup() -> None:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     settings.audio_dir.mkdir(parents=True, exist_ok=True)
     init_db()
+    st = storage_status()
+    logger.info(
+        "storage data_dir=%s entries=%s ephemeral=%s",
+        st["data_dir"],
+        st["entry_count"],
+        st["ephemeral_storage"],
+    )
+    if st["storage_warning"]:
+        logger.warning(st["storage_warning"])
+    if settings.auto_backup and settings.db_path.is_file():
+        try:
+            write_automatic_backup(create_dated=False)
+        except Exception:
+            logger.exception("startup backup failed")
     if settings.public_url and not effective_passcode_hash():
         logger.warning("PUBLIC_URL is set but PASSCODE_HASH is empty — set a passcode before sharing the link")
     scheduler = AsyncIOScheduler(timezone=settings.timezone)
@@ -120,6 +135,38 @@ async def create_entry(
         conn.execute("UPDATE entries SET audio_path = ? WHERE id = ?", (str(dest), entry_id))
     background_tasks.add_task(process_entry_pipeline, entry_id)
     logger.info("entry_id=%s status=uploaded", entry_id)
+    return {"id": entry_id}
+
+
+MAX_SCAN_BYTES = 10 * 1024 * 1024
+ALLOWED_SCAN_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+
+
+@app.post("/entries/scan")
+async def create_scan_entry(
+    _: AuthDep,
+    background_tasks: BackgroundTasks,
+    image: UploadFile = File(...),
+) -> dict:
+    content_type = (image.content_type or "image/jpeg").split(";")[0].strip().lower()
+    if content_type not in ALLOWED_SCAN_TYPES:
+        raise HTTPException(status_code=400, detail="Use JPEG, PNG, or WebP photos")
+    data = await image.read()
+    if len(data) > MAX_SCAN_BYTES:
+        raise HTTPException(status_code=400, detail="Image must be under 10 MB")
+    if not data:
+        raise HTTPException(status_code=400, detail="Empty image")
+    with get_db() as conn:
+        cur = conn.execute(
+            """
+            INSERT INTO entries (created_at, duration_s, status)
+            VALUES (?, NULL, 'uploaded')
+            """,
+            (_utc_now(),),
+        )
+        entry_id = cur.lastrowid
+    background_tasks.add_task(process_scanned_entry, entry_id, data, content_type)
+    logger.info("entry_id=%s status=scan_uploaded", entry_id)
     return {"id": entry_id}
 
 
@@ -362,6 +409,8 @@ async def get_settings_route(_: AuthDep) -> dict:
     with get_db() as conn:
         rows = conn.execute("SELECT key, value FROM settings").fetchall()
     stored = {r["key"]: r["value"] for r in rows}
+    st = storage_status()
+    bk = backup_status()
     return {
         "keep_audio": cfg.keep_audio,
         "llm_provider": cfg.llm_provider,
@@ -369,6 +418,14 @@ async def get_settings_route(_: AuthDep) -> dict:
         "timezone": cfg.timezone,
         "has_passcode": bool(effective_passcode_hash()),
         "backup_configured": bool(cfg.age_recipient),
+        "entry_count": st["entry_count"],
+        "ephemeral_storage": st["ephemeral_storage"],
+        "storage_warning": st["storage_warning"],
+        "auto_backup": bk["auto_backup"],
+        "backup_dir": bk["backup_dir"],
+        "latest_backup_at": bk["latest_backup_at"],
+        "dated_backup_count": bk["dated_backup_count"],
+        "backup_retain_days": bk["backup_retain_days"],
     }
 
 
